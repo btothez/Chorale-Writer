@@ -21,26 +21,29 @@
   (doseq [note notes]
     (. channel noteOff note)))
 
+(defn playchord
+  [channel chord start]
+  (playnotes
+     channel
+     (map #(+ start (get scalemap (keyword (str %))))
+      chord)))
+
 (defn play [sequence]
   (doseq [thing sequence]
     (println thing (type thing))
     (if (instance? Long thing)
       (playnote channel thing)
-      (playnotes channel thing))))
-
-
-
-      ; (ns slosh.core
-      ;   (:gen-class))
+      (playchord channel thing 60))))
 
 ; LEIN TRAMPOLINE RUN
 (defn -main []
-  ; (println (.readCharacter (ConsoleReader.))))
   (while true (do
-    ; (play [60 65 67]))))
-    (playnote channel (.readCharacter (ConsoleReader.))))))
+    (playnote channel
+            (mod
+               (.readCharacter (ConsoleReader.))
+                60)))))
 
-
+; (while true (do (play [60 71 71 69 [1 3 5 6] 64  65 65 [ 4 5 7] 62 62 67 65 [2 4 6 ] 55 55])))
 
 ; keys - destructure the hash input OR give it something else
 ; (. channel noteOn c velocity)
