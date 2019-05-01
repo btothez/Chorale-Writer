@@ -10,6 +10,18 @@
 (def channel (aget (.getChannels synth) 0))
 (def scalemap {:1 0 :2 2 :3 4 :4 5 :5 7 :6 9 :7 11})
 
+(defn iter-chord [chord]
+  ((reduce
+    (fn [acc new]
+      (let [{:keys [ongoing last octave]} acc
+            lower (or octave (< new last))]
+      {:ongoing
+        (conj ongoing (if lower (+ 12 new) new))
+       :last new
+       :octave lower}))
+    {:ongoing [] :last 0 :octave false} chord) :ongoing))
+
+
 (defn playnote [channel note]
   (. channel noteOn note 127)
   (Thread/sleep 300)
@@ -22,30 +34,23 @@
   (doseq [note notes]
     (. channel noteOff note)))
 
+(defn mapnote [note scalemap start]
+  (+ start (get scalemap (keyword (str note)))))
+
 (defn playchord
   [channel chord start]
   (playnotes
      channel
-     (map #(+ start (get scalemap (keyword (str %))))
-      chord)))
+     (iter-chord (map #(mapnote % scalemap 60)
+      chord))))
 
 (defn play [sequence]
   (doseq [thing sequence]
     (println thing (type thing))
     (if (instance? Long thing)
-      (playnote channel thing)
+      (playnote channel (mapnote thing scalemap 60))
       (playchord channel thing 60))))
 
-(defn iter-chord [chord start]
-  (reduce
-    (fn [acc new]
-      (let [{:keys [ongoing last octave]} acc
-            lower (or octave (< new last))]
-      {:ongoing
-        (conj ongoing (if lower (+ 12 new) new))
-       :last new
-       :octave lower}))
-    {:ongoing [] :last 0 :octave false} chord))
 
 ; LEIN TRAMPOLINE RUN
 (defn -main []
@@ -55,7 +60,7 @@
                (.readCharacter (ConsoleReader.))
                 60)))))
 
-; (while true (do (play [60 71 71 69 [1 3 5 6] 64  65 65 [ 4 5 7] 62 62 67 65 [2 4 6 ] 55 55])))
+; (while true (play [[1 5 1 3] [1 5 1 3] [1 5 1 3] [1 6 1 4] [1 7 1 5] ]))
 
 ; keys - destructure the hash input OR give it something else
 ; (. channel noteOn c velocity)
