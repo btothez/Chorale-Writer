@@ -8,6 +8,7 @@
 
 (def synth (doto (MidiSystem/getSynthesizer) .open))
 (def channel (aget (.getChannels synth) 0))
+(def scalemap {:1 0 :2 2 :3 4 :4 5 :5 7 :6 9 :7 11})
 
 (defn playnote [channel note]
   (. channel noteOn note 127)
@@ -34,6 +35,17 @@
     (if (instance? Long thing)
       (playnote channel thing)
       (playchord channel thing 60))))
+
+(defn iter-chord [chord start]
+  (reduce
+    (fn [acc new]
+      (let [{:keys [ongoing last octave]} acc
+            lower (or octave (< new last))]
+      {:ongoing
+        (conj ongoing (if lower (+ 12 new) new))
+       :last new
+       :octave lower}))
+    {:ongoing [] :last 0 :octave false} chord))
 
 ; LEIN TRAMPOLINE RUN
 (defn -main []
