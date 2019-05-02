@@ -24,18 +24,21 @@
 
 (defn playnote [channel note]
   (. channel noteOn note 127)
-  (Thread/sleep 300)
+  (Thread/sleep 400)
   (. channel noteOff note))
 
 (defn playnotes [channel notes]
   (doseq [note notes]
     (. channel noteOn note 127))
-  (Thread/sleep 300)
+  (Thread/sleep 400)
   (doseq [note notes]
     (. channel noteOff note)))
 
 (defn mapnote [note scalemap start]
-  (+ start (get scalemap (keyword (str note)))))
+  (if (< note 0)
+    (+ (- start 12) (get scalemap (keyword (str (Math/abs note)))))
+    (+ start (get scalemap (keyword (str note))))
+  ))
 
 (defn playchord
   [channel chord start]
@@ -60,8 +63,11 @@
                (.readCharacter (ConsoleReader.))
                 60)))))
 
-; (while true (play [[1 5 1 3] [1 5 1 3] [1 5 1 3] [1 6 1 4] [1 7 1 5] ]))
-
+; (while true
+;   (play [[1 5 1 3] [1 5 1 3] [1 5 1 3] [1 6 1 4]
+;          [1 7 1 5] [1 7 1 5] [1 6 1 4] [1 6 1 4]
+;          [1 5 1 3] [4 4 6 2] [5 3 5 1] [5 2 5 7]
+;          [1 1 3 1] [1 1] 1 1]))
 ; keys - destructure the hash input OR give it something else
 ; (. channel noteOn c velocity)
 
