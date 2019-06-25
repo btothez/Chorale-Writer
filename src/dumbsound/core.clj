@@ -1,14 +1,20 @@
 (ns dumbsound.core
+  ; (:require [clojure.core.async
+  ;         :as async
+  ;         :refer :all)
   (:import [javax.sound.midi MidiSystem Sequencer]
-           [jline.console ConsoleReader]
-  )
+           [jline.console ConsoleReader] )
   (:gen-class))
 
 ; (use 'dumbsound.core :reload-all)
 
 (def synth (doto (MidiSystem/getSynthesizer) .open))
+(def instruments (.. synth getDefaultSoundbank getInstruments))
+(def instrument (nth instruments 78))
 (def channel (aget (.getChannels synth) 0))
 (def scalemap {:1 0 :2 2 :3 4 :4 5 :5 7 :6 9 :7 11})
+(.loadInstrument synth instrument)
+(.programChange channel 78)
 
 (defn iter-chord [chord]
   ((reduce
@@ -24,13 +30,13 @@
 
 (defn playnote [channel note]
   (. channel noteOn note 127)
-  (Thread/sleep 400)
+  (Thread/sleep 600)
   (. channel noteOff note))
 
 (defn playnotes [channel notes]
   (doseq [note notes]
     (. channel noteOn note 127))
-  (Thread/sleep 400)
+  (Thread/sleep 600)
   (doseq [note notes]
     (. channel noteOff note)))
 
@@ -63,11 +69,28 @@
                (.readCharacter (ConsoleReader.))
                 60)))))
 
-; (while true
-;   (play [[1 5 1 3] [1 5 1 3] [1 5 1 3] [1 6 1 4]
-;          [1 7 1 5] [1 7 1 5] [1 6 1 4] [1 6 1 4]
-;          [1 5 1 3] [4 4 6 2] [5 3 5 1] [5 2 5 7]
-;          [1 1 3 1] [1 1] 1 1]))
+
+
+(defn getSynthPlayer [channelNbr instrumentNbr]
+  "Initialize synthesizer and return play function"
+  (let [synth (javax.sound.midi.MidiSystem/getSynthesizer)]
+    (do
+      (.open synth) ; Open synth before using
+        (let [channels (.getChannels synth)
+              instruments (.. synth getDefaultSoundbank getInstruments)]
+          (do
+            (let [channel (nth channels channelNbr)
+                  instrument (nth instruments instrumentNbr)]
+              (println "Instrument" instrumentNbr "is" (.getName instrument))
+              (.loadInstrument synth instrument)
+              (.programChange channel instrumentNbr) ; Lots of blogs never mentioned this!
+              (fn [volume note duration] ; play function
+                (do
+                  (.noteOn channel note volume)
+                  (Thread/sleep duration)
+                  (.noteOff channel note)))))))))
+
+; (while true (play [[1 5 1 3] [1 5 1 3] [1 5 1 3] [1 6 1 4] [1 7 1 5] [1 7 1 5] [1 6 1 4] [1 6 1 4] [1 5 1 3] [4 4 6 2] [5 3 5 1] [5 2 5 7] [1 1 3 1] [1 1] 1 1 [-7 5 2 4] [1 5 1 3] [-6 4 1 4] [-7 4 7 2] [-5 3 5 3][-5 3 5 3] [-6 3 6 1]  [-6 3 6 1] [-4 4 6 2] [-4 4 6 2] [-5 3 5 1] [-5 2 5 7] [1 3 5 1] 1 1 1]))
 ; keys - destructure the hash input OR give it something else
 ; (. channel noteOn c velocity)
 
