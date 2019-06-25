@@ -1,4 +1,4 @@
-# dumbsound
+# Clojre Midi Chorale Writer
 
 FIXME: description
 
